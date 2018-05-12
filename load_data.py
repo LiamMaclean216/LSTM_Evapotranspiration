@@ -76,7 +76,8 @@ def load_data(cities,years,path = "data/", resample = "6H",stand_data=True):
         result = result.resample(resample,how={'Radiation': "mean",'Temp': "mean",'Humidity': "mean",
                                    'Wind': "mean",'Rain': "sum",'Lysimeter': "mean"})
         result = result.dropna(how='any')
-        if(stand_data):
+        
+        if stand_data:
             result = standardize(result)
             
         DataList.append(result)
@@ -89,31 +90,60 @@ def load_data(cities,years,path = "data/", resample = "6H",stand_data=True):
 
 
 
-def gen_data(batch_size,num_steps,n_iterations,DataList,path = "data/", resample = "6H"):
-    #if cities and years:
-    #    print("Loading...")
-    #load_data(cities,years,path=path,resample=resample)
-        
-    
-    for iteration in range(n_iterations):
-        data = random.choice(DataList)
-        
-        
-        #index = num_steps
-        
-        
-        x_data = data[['Radiation','Temp','Humidity','Wind','Rain']].as_matrix()
-        y_data = data[['Lysimeter']].as_matrix()
-
-        x_batch = np.zeros([batch_size,num_steps,5])
-        y_batch = np.zeros([batch_size])
-        
-        for b in range(batch_size):
-            index = random.randrange(num_steps,y_data.shape[0])
-            x_batch[b] = x_data[index-num_steps:index]
-            y_batch[b] = y_data[index-1]
+def gen_data(batch_size,num_steps,DataList,n_iterations=100000,path = "data/",shuffle=False):        
+    if shuffle:
+        for iteration in range(n_iterations):
             
+            
+            
+                
+
+            x_batch = np.zeros([batch_size,num_steps,5])
+            y_batch = np.zeros([batch_size])
+
+            for b in range(batch_size):
+                data = random.choice(DataList)
+                
+               # if(stand_data):
+                #    x_data = standardize(data[['Radiation','Temp','Humidity','Wind','Rain']]).as_matrix()
+                #else :
+                x_data = data[['Radiation','Temp','Humidity','Wind','Rain']].as_matrix()
+                y_data = data[['Lysimeter']].as_matrix()
+            
+                index = random.randrange(num_steps,y_data.shape[0])
+                x_batch[b] = x_data[index-num_steps:index]
+                y_batch[b] = y_data[index-1]
 
 
-        yield x_batch,y_batch
+
+            yield x_batch,y_batch
+    else : 
+        for data in DataList:
+            x_data = data[['Radiation','Temp','Humidity','Wind','Rain']].as_matrix()
+            y_data = data[['Lysimeter']].as_matrix()
+            
+            index = num_steps
+
+            for i in range((x_data.shape[0]//batch_size)-1):
+                x_batch = np.zeros([batch_size,num_steps,5])
+                y_batch = np.zeros([batch_size])
+                for b in range(batch_size):
+                    if index > y_data.shape[0]:
+                        break
+                    x_batch[b] = x_data[index-num_steps:index]
+                    y_batch[b] = y_data[index-1]
+                    index+=1
+                if index > y_data.shape[0]:
+                    break
+
+                yield x_batch,y_batch
+            
+            
+            
+            
+            
+            
+            
+            
+            
     
